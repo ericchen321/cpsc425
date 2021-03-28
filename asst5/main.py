@@ -2,12 +2,14 @@
 #based on a MATLAB code by James Hays and Sam Birch 
 
 import numpy as np
-from util import load, build_vocabulary, get_bags_of_sifts, convert_label_to_integer, convert_label_to_one_hot
+from util import load, build_vocabulary, get_bags_of_sifts, convert_int_to_classname
 from classifiers import nearest_neighbor_classify, svm_classify
 import matplotlib.pyplot as plt
 import pickle
 import os
 import glob
+import sys
+from sklearn.metrics import accuracy_score, confusion_matrix, plot_confusion_matrix
 
 #For this assignment, you will need to report performance for sift features on two different classifiers:
 # 1) Bag of sift features and nearest neighbor classifier
@@ -19,7 +21,17 @@ import glob
 #Sample images from the training/testing dataset. 
 #You can limit number of samples by using the n_sample parameter.
 
-build_new_model = True
+if(len(sys.argv)!=4):
+        print("Wrong arguments, please check comments in the script for usage")
+        sys.exit(1)
+
+build_new_model = sys.argv[1]
+vocab_size = int(sys.argv[2])
+n_neighbors = int(sys.argv[3])
+
+print(f"Experiment config:\nbuild_new_model={build_new_model}\nvocab_size={vocab_size}\nn_neighbors={n_neighbors}")
+
+''' Step 0: Load data in '''
 
 train_image_paths = None
 train_labels = None
@@ -54,7 +66,6 @@ assert np.array_equal(train_classnames, test_classnames)
  dimensionality of each image representation. See the starter code for
  each function for more details. '''
 
-vocab_size = 200
 train_image_feats = None
 test_image_feats = None
 kmeans = None
@@ -116,7 +127,7 @@ for classindex, histo in avg_histos.items():
     classname = train_classnames[int(classindex)]
     ax_histo.set_title(f'Average histogram for class: index={classindex}, name={classname}; {vocab_size} vocabs')
     #plt.show()
-    plt.savefig(f'avghistog_vocab_size={vocab_size}_cidx={classindex}_cname={classname}.png')
+    plt.savefig(f'figs/histos/avghistog_vocab_size={vocab_size}_cidx={classindex}_cname={classname}.png')
         
 #If you want to avoid recomputing the features while debugging the
 #classifiers, you can either 'save' and 'load' the extracted features
@@ -130,8 +141,9 @@ for classindex, histo in avg_histos.items():
 
 print('Using nearest neighbor classifier to predict test set categories\n')
 #TODO: YOU CODE nearest_neighbor_classify function from classifers.py
-pred_labels_knn = nearest_neighbor_classify(train_image_feats, train_labels, test_image_feats)
-print(pred_labels_knn)
+train_labels_classnames = convert_int_to_classname(train_labels, train_classnames)
+model_knn, pred_labels_classnames_knn = nearest_neighbor_classify(train_image_feats, train_labels_classnames, test_image_feats, n_neighbors)
+#print(pred_labels_classnames_knn)
 
 print('Using support vector machine to predict test set categories\n')
 #TODO: YOU CODE svm_classify function from classifers.py
@@ -146,17 +158,18 @@ print('---Evaluation---\n')
 # TODO: 1) Calculate the total accuracy of your model by counting number
 #   of true positives and true negatives over all. 
 # calculate accuracy of KNN classifier
-test_labels_one_hot = convert_label_to_one_hot(test_labels, 15)
-pred_labels_knn_one_hot = convert_label_to_one_hot(pred_labels_knn, 15)
-knn_correct_preds = np.sum(np.multiply(test_labels_one_hot, pred_labels_knn_one_hot))
-print(f"Number of correct predictions: {knn_correct_preds}")
-knn_acc = knn_correct_preds / test_labels_one_hot.shape[0]
-print(f"KNN classifier accuracy: {knn_acc}")
+test_labels_classnames = convert_int_to_classname(test_labels, test_classnames)
+knn_acc = accuracy_score(test_labels_classnames, pred_labels_classnames_knn) * 100.0
+print(f"KNN classifier accuracy={knn_acc:.2f}%, vocab_size={vocab_size}, n_neighbors={n_neighbors}")
 
 # TODO: 2) Build a Confusion matrix and visualize it. 
 #   You will need to convert the one-hot format labels back
 #   to their category name format.
-
+conf_mat_knn = confusion_matrix(test_labels_classnames, pred_labels_classnames_knn)
+assert np.linalg.norm(np.sum(conf_mat_knn) - test_labels.shape[0]) < 1e-9
+plot_confusion_matrix(model_knn, test_image_feats, test_labels_classnames, xticks_rotation="vertical")
+plt.title(f'Confusion matrix, KNN, vocab_size={vocab_size}, n_neighbors={n_neighbors}')
+plt.savefig(f'figs/conf_mats/conf_mat_knn_vocab_size={vocab_size}_n_neighbors={n_neighbors}.png', bbox_inches='tight')
 
 # Interpreting your performance with 100 training examples per category:
 #  accuracy  =   0 -> Your code is broken (probably not the classifier's

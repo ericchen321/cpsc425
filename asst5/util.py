@@ -112,6 +112,26 @@ def convert_label_to_integer(feats_one_hot):
     feats = np.argmax(feats_one_hot, axis=1)
     return feats
 
+def convert_int_to_classname(feats, classnames):
+    """ Convert class labels from integer to classnames.
+
+    Parameters
+    ----------
+    feats: (N, ) array of class indices where N is the number of samples
+    num_classes: Total number of classes
+    classnames: (l, ) array of classnames where l is the number of classes.
+                classnames[i] gives the classname of class with index i.
+
+    Returns
+    ----------
+    feats_classname: (N,) array of classnames of N samples.
+    """
+    feats_classname = np.empty(feats.shape, dtype=object)
+    for i in range(0, feats_classname.shape[0]):
+        feats_classname[i] = classnames[int(feats[i])]
+    return feats_classname
+
+
 def load(ds_path):
     """ Load from the training/testing dataset.
 
