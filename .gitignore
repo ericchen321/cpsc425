@@ -1,0 +1,15 @@
+*.txt
+*.png
+*.PNG
+*.bmp
+*.BMP
+*.jpg
+*.JPG
+*.pgm
+*.PGM
+*.key
+*/__pycache__/
+*.pyc
+.DS_Store
+*.pkl
+*.npy
