@@ -21,15 +21,17 @@ from sklearn.metrics import accuracy_score, confusion_matrix, plot_confusion_mat
 #Sample images from the training/testing dataset. 
 #You can limit number of samples by using the n_sample parameter.
 
-if(len(sys.argv)!=4):
+if(len(sys.argv)!=6):
         print("Wrong arguments, please check comments in the script for usage")
         sys.exit(1)
 
 build_new_model = sys.argv[1]
 vocab_size = int(sys.argv[2])
 n_neighbors = int(sys.argv[3])
+C = float(sys.argv[4])
+repeat = int(sys.argv[5])
 
-print(f"Experiment config:\nbuild_new_model={build_new_model}\nvocab_size={vocab_size}\nn_neighbors={n_neighbors}")
+print(f"Experiment config:\nbuild_new_model={build_new_model}\nvocab_size={vocab_size}\nn_neighbors={n_neighbors}\nC={C}")
 
 ''' Step 0: Load data in '''
 
@@ -127,7 +129,7 @@ for classindex, histo in avg_histos.items():
     classname = train_classnames[int(classindex)]
     ax_histo.set_title(f'Average histogram for class: index={classindex}, name={classname}; {vocab_size} vocabs')
     #plt.show()
-    plt.savefig(f'figs/histos/avghistog_vocab_size={vocab_size}_cidx={classindex}_cname={classname}.png')
+    plt.savefig(f'figs/histos/avghistog_vocab_size={vocab_size}_cidx={classindex}_cname={classname}_repeat={repeat}.png')
         
 #If you want to avoid recomputing the features while debugging the
 #classifiers, you can either 'save' and 'load' the extracted features
@@ -147,8 +149,7 @@ model_knn, pred_labels_classnames_knn = nearest_neighbor_classify(train_image_fe
 
 print('Using support vector machine to predict test set categories\n')
 #TODO: YOU CODE svm_classify function from classifers.py
-#pred_labels_svm_one_hot = svm_classify(train_image_feats, train_labels, test_image_feats)
-
+model_svm, pred_labels_classnames_svm = svm_classify(train_image_feats, train_labels_classnames, test_image_feats, C)
 
 
 print('---Evaluation---\n')
@@ -161,6 +162,8 @@ print('---Evaluation---\n')
 test_labels_classnames = convert_int_to_classname(test_labels, test_classnames)
 knn_acc = accuracy_score(test_labels_classnames, pred_labels_classnames_knn) * 100.0
 print(f"KNN classifier accuracy={knn_acc:.2f}%, vocab_size={vocab_size}, n_neighbors={n_neighbors}")
+svm_acc = accuracy_score(test_labels_classnames, pred_labels_classnames_svm) * 100.0
+print(f"SVM classifier accuracy={svm_acc:.2f}%, vocab_size={vocab_size}, C={C}")
 
 # TODO: 2) Build a Confusion matrix and visualize it. 
 #   You will need to convert the one-hot format labels back
@@ -169,7 +172,13 @@ conf_mat_knn = confusion_matrix(test_labels_classnames, pred_labels_classnames_k
 assert np.linalg.norm(np.sum(conf_mat_knn) - test_labels.shape[0]) < 1e-9
 plot_confusion_matrix(model_knn, test_image_feats, test_labels_classnames, xticks_rotation="vertical")
 plt.title(f'Confusion matrix, KNN, vocab_size={vocab_size}, n_neighbors={n_neighbors}')
-plt.savefig(f'figs/conf_mats/conf_mat_knn_vocab_size={vocab_size}_n_neighbors={n_neighbors}.png', bbox_inches='tight')
+plt.savefig(f'figs/conf_mats/conf_mat_knn_vocab_size={vocab_size}_n_neighbors={n_neighbors}_repeat={repeat}.png', bbox_inches='tight')
+
+conf_mat_svm = confusion_matrix(test_labels_classnames, pred_labels_classnames_svm)
+assert np.linalg.norm(np.sum(conf_mat_svm) - test_labels.shape[0]) < 1e-9
+plot_confusion_matrix(model_svm, test_image_feats, test_labels_classnames, xticks_rotation="vertical")
+plt.title(f'Confusion matrix, SVM, vocab_size={vocab_size}, C={C}')
+plt.savefig(f'figs/conf_mats/conf_mat_svm_vocab_size={vocab_size}_C={C}_repeat={repeat}.png', bbox_inches='tight')
 
 # Interpreting your performance with 100 training examples per category:
 #  accuracy  =   0 -> Your code is broken (probably not the classifier's
