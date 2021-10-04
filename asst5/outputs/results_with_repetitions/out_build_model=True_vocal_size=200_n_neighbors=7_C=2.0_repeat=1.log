@@ -1,0 +1,20 @@
+Experiment config:
+build_new_model=True
+vocab_size=200
+n_neighbors=7
+C=2.0
+Getting paths and labels for all train and test data
+
+Extracting SIFT features
+
+Buildng vocabulary
+Buildng histograms for training images
+Buildng histograms for testing images
+Using nearest neighbor classifier to predict test set categories
+
+Using support vector machine to predict test set categories
+
+---Evaluation---
+
+KNN classifier accuracy=36.67%, vocab_size=200, n_neighbors=7
+SVM classifier accuracy=45.78%, vocab_size=200, C=2.0
